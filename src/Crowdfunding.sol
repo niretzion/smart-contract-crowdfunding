@@ -57,6 +57,8 @@ contract Crowdfunding {
     function pledge() public payable {
         require(getState() == State.Ongoing, "Campaign is not ongoing");
         plegerToAmount[msg.sender] += msg.value;
+        // TODO: check if i need to add a line that trasfers the ETH to the contract?
+
         emit Pledged(msg.sender, msg.value, address(this).balance);
     }
 
