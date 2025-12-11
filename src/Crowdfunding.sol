@@ -58,8 +58,11 @@ contract Crowdfunding {
         require(getState() == State.Ongoing, "Campaign is not ongoing");
         plegerToAmount[msg.sender] += msg.value;
         // TODO: check if i need to add a line that trasfers the ETH to the contract?
-
+        // Answer: just by making the method payable, the ETH is automatically sent to the contract
         emit Pledged(msg.sender, msg.value, address(this).balance);
+        if (getState() == State.Successful) {
+            emit GoalReached(address(this).balance, block.timestamp);
+        }
     }
 
     // overwrite receive() and fallback() to reject ETH sent using send or transfer
