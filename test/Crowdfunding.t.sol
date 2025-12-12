@@ -19,8 +19,11 @@ contract CrowdfundingTest is Test {
         owner1 = makeAddr("owner1");
         owner2 = makeAddr("owner2");
         pledger1 = makeAddr("pledger1");
+        vm.deal(address(pledger1), 10 ether);
         pledger2 = makeAddr("pledger2");
+        vm.deal(address(pledger2), 10 ether);
         pledger3 = makeAddr("pledger3");
+        vm.deal(address(pledger3), 10 ether);
 
         crowdfundingContract1Owener1 = new Crowdfunding(owner1, 1 ether, block.timestamp + 1 days);
         crowdfundingContract2Owener1 = new Crowdfunding(owner1, 1 ether, block.timestamp + 2 days);
@@ -29,16 +32,16 @@ contract CrowdfundingTest is Test {
 
     /*
      sanity test for crowdfundingContract1Owener1
-     1. check initial state
-     2. pledger1 pledge 0.5 ether
-     3. check state after pledge
-     4. expect revert when pledger1 try to claim funds
-     5. expect revert when owner1 try to claim funds before deadline
-     6. fast forward time to after deadline
-     7. expect revert when owner1 try to claim funds when goal not reached
-     8. expect reveert , pledger1 pledge another 0.6 ether to reach the goal after deadline
-     9. pleger1 get refund
-     10. check state after refund, balance should be 0
+     1. check initial contract state, owner, goal, claimed
+     3. pledger1 pledge 0.5 ether
+     4. check state after pledge
+     5. expect revert when pledger1 try to claim funds
+     6. expect revert when owner1 try to claim funds before deadline
+     7. fast forward time to after deadline
+     8. expect revert when owner1 try to claim funds when goal not reached
+     9. expect revert , pledger1 pledge another 0.6 ether to reach the goal after deadline
+     10. pleger1 get refund
+     11. check state after refund, balance should be 0
 
      1. create new crowdfunding contract by owner1
      2. pledger1 pledge 1.2 ether to reach the goal
@@ -81,19 +84,40 @@ contract CrowdfundingTest is Test {
      */
 
     function test_contract1() public {
-        // assertEq(crowdfundingContract1Owener1.creator(), owner1);
-        // assertEq(crowdfundingContract1Owener1.goal(), 1 ether);
-        // assertEq(crowdfundingContract1Owener1.claimed(), false);
-        // assertEq(uint256(crowdfundingContract1Owener1.getState()), uint256(Crowdfunding.State.Ongoing));
+        assertEq(crowdfundingContract1Owener1.creator(), owner1);
+        assertEq(crowdfundingContract1Owener1.goal(), 1 ether);
+        assertEq(crowdfundingContract1Owener1.claimed(), false);
+        assertEq(crowdfundingContract1Owener1.deadline(), block.timestamp + 1 days);
+        assertEq(uint8(crowdfundingContract1Owener1.getState()), uint8(Crowdfunding.State.Ongoing));
 
-        // vm.prank(pledger1);
-        // crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
-        // assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0.5 ether);
-        // assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger2), 0 ether);
-        // assertEq(address(crowdfundingContract1Owener1).balance, 0.5 ether);
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
+        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0.5 ether);
+        assertEq(address(crowdfundingContract1Owener1).balance, 0.5 ether);
 
-        // assertEq(crowdfundingContract1Owener1.giveback(), Crowdfunding.State.Ongoing);
-        // expectRevert();
-        // assertEq(crowdfundingContract1Owener1.claim(), "the contract does not belong to pledger1");
+        // 5. expect revert when pledger1 try to claim funds
+        vm.prank(pledger1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.claim();
+        // 6. expect revert when owner1 try to claim funds before deadline
+        vm.prank(owner1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.claim();
+        // 7. fast forward time to after deadline
+        vm.warp(block.timestamp + 1 days);
+        // 8. expect revert when owner1 try to claim funds when goal not reached
+        vm.prank(owner1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.claim();
+        // 9. expect revert , pledger1 pledge another 0.6 ether to reach the goal after deadline
+        vm.prank(pledger1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
+        //10. pleger1 get refund
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.giveback();
+        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0);
+        // 11. check state after refund, balance should be 0
+        assertEq(address(crowdfundingContract1Owener1).balance, 0);
     }
 }
