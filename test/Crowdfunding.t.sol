@@ -132,7 +132,6 @@ contract CrowdfundingTest is Test {
     }
 
     // Test3:
-
     function test3_contracts_different_deadlines() public {
         // 3. pledger1 pledge 0.5 ether to contract1
         vm.prank(pledger1);
@@ -152,5 +151,36 @@ contract CrowdfundingTest is Test {
         // 8. owner1 claim funds from contract1
         vm.prank(owner1);
         crowdfundingContract1Owener1.claim();
+    }
+
+    // Test5:
+    function test5_owner_pledge_no_goal_reached() public {
+        // Crowdfunding crowdfundingContract = new Crowdfunding(owner1, 2 ether, block.timestamp + 1 days);
+        // 2. pledger1 pledge some ether to contract1
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.2 ether}();
+        // 3. owner1 pledge some ether to his own contract. goal is not reached
+        vm.prank(owner1);
+        crowdfundingContract1Owener1.pledge{value: 0.3 ether}();
+        // 4. owner1 try to claim funds - expect revert
+        vm.prank(owner1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.claim();
+        // 5. fast forward time to after deadline of contract1
+        vm.warp(block.timestamp + 1 days);
+        // 6. owner1 try to claim funds - expect revert
+        vm.prank(owner1);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.claim();
+        // 7. pledger1 get refund
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.giveback();
+        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0);
+        assertEq(address(crowdfundingContract1Owener1).balance, 0.3 ether);
+        assertEq(address(pledger1).balance, 10 ether); // gas is not deducted in tests, we it still has 10 eth
+        // 8. owner1 get refund.
+        vm.prank(owner1);
+        crowdfundingContract1Owener1.giveback();
+        assertEq(crowdfundingContract1Owener1.plegerToAmount(owner1), 0);
     }
 }
