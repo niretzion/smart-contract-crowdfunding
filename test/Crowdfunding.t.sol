@@ -17,7 +17,9 @@ contract CrowdfundingTest is Test {
 
     function setUp() public {
         owner1 = makeAddr("owner1");
+        vm.deal(address(owner1), 1 ether);
         owner2 = makeAddr("owner2");
+        vm.deal(address(owner2), 0.1 ether);
         pledger1 = makeAddr("pledger1");
         vm.deal(address(pledger1), 10 ether);
         pledger2 = makeAddr("pledger2");
@@ -31,6 +33,7 @@ contract CrowdfundingTest is Test {
     }
 
     /*
+    Test1:
      sanity test for crowdfundingContract1Owener1
      1. check initial contract state, owner, goal, claimed
      3. pledger1 pledge 0.5 ether
@@ -43,19 +46,24 @@ contract CrowdfundingTest is Test {
      10. pleger1 get refund
      11. check state after refund, balance should be 0
 
+    Test2:
      1. create new crowdfunding contract by owner1
      2. pledger1 pledge 1.2 ether to reach the goal
      3. fast forward time to after deadline
      4. pledger1 try to get refund - expect revert
      5. owner1 claim funds
 
+    Test3:
      1. create new crowdfunding contract1 by owner1 deadline in 1 day
      2. create new crowdfunding contract2 by owner1 dweadline in 2 days
      3. pledger1 pledge 0.5 ether to contract1
      4. pledger2 pledge 0.7 ether to contract2
-     5. fast forward time to after deadline of contract1
-     6. owner1 claim funds from contract2 - expect revert
+     5. pledger1 pledge 0.6 ether to contract1 to reach goal
+     6. fast forward time to after deadline of contract1
+     7. owner1 claim funds from contract2 - expect revert
+     8. owner1 claim funds from contract1
 
+    Test4:
      1. create new crowdfunding contract1 by owner1
      2. create new crowdfunding contract2 by owner2
      3. pledger1 pledge to contract1
@@ -66,6 +74,7 @@ contract CrowdfundingTest is Test {
      8. owner1 claim funds from contract1 - success
      9. owner2 claim funds from contract2 - success
 
+    Test5:
      1. create new crowdfunding contract1 by owner1
      2. pledger1 pledge some ether to contract1
      3. owner1 pledge some ether to his own contract. goal is not reached
@@ -75,7 +84,7 @@ contract CrowdfundingTest is Test {
      7. pledger1 get refund
      8. owner1 get refund.
 
-
+    Test6:
      1. create new crowdfunding contract1 by owner1
      2. pledger1 pledge some ether to contract1
      3. owner1 pledge some ether to his own contract. goal is reached
@@ -83,7 +92,8 @@ contract CrowdfundingTest is Test {
      5. owner1 claim funds - success
      */
 
-    function test_contract1() public {
+    // Test1
+    function test1_contract1() public {
         assertEq(crowdfundingContract1Owener1.creator(), owner1);
         assertEq(crowdfundingContract1Owener1.goal(), 1 ether);
         assertEq(crowdfundingContract1Owener1.claimed(), false);
@@ -119,5 +129,28 @@ contract CrowdfundingTest is Test {
         assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0);
         // 11. check state after refund, balance should be 0
         assertEq(address(crowdfundingContract1Owener1).balance, 0);
+    }
+
+    // Test3:
+
+    function test3_contracts_different_deadlines() public {
+        // 3. pledger1 pledge 0.5 ether to contract1
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
+        // 4. pledger2 pledge 0.7 ether to contract2
+        vm.prank(pledger2);
+        crowdfundingContract2Owener1.pledge{value: 0.7 ether}();
+        // 5. pledger1 pledge 0.6 ether to contract1 to reach goal
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.6 ether}();
+        // 6. fast forward time to after deadline of contract1
+        vm.warp(block.timestamp + 1 days);
+        // 7. owner1 claim funds from contract2 - expect revert
+        vm.prank(owner1);
+        vm.expectRevert();
+        crowdfundingContract2Owener1.claim();
+        // 8. owner1 claim funds from contract1
+        vm.prank(owner1);
+        crowdfundingContract1Owener1.claim();
     }
 }
