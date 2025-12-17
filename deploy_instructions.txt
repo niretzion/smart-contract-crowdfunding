@@ -1,0 +1,7 @@
+create .env file like my local file
+open metamask wallet , use SepoliaETH test network, get some test eth.
+
+constructor args:
+_creator - my account address 0xb2944182D46439B43116A0fD57C79c961526d364
+_goal 1000000 wei
+_deadline date -v+21d +%s 1767797424
