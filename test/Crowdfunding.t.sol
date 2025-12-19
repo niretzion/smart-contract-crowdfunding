@@ -182,7 +182,7 @@ contract CrowdfundingTest is Test {
         vm.prank(pledger2);
         crowdfundingContract3Owener2.pledge{value: 1 ether}();
 
-        // 5. fast forward time to after deadline of contract1 and contract2
+        // 5. fast forward time to after deadline of contract1 and contract3
         vm.warp(block.timestamp + 1 days);
 
         // 6. owner1 claim funds from contract3 - expect revert
@@ -240,7 +240,7 @@ contract CrowdfundingTest is Test {
         assertEq(crowdfundingContract1Owener1.plegerToAmount(owner1), 0);
     }
 
-    function test6_() public {
+    function test6_owner_pledges_to_reach_goal() public {
         // 2. pledger1 pledge some ether to contract1
         vm.prank(pledger1);
         crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
