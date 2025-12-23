@@ -18,27 +18,30 @@ contract Crowdfunding {
     // Contract State
     enum State {
         Ongoing,
-        Successful,
-        Failed
+        OngoingGoalReached,
+        EndedGoalReached,
+        EndedGoalNotReached
     }
 
     function getState() public view returns (State) {
         if (block.timestamp < deadline) {
-            return State.Ongoing;
+            if (address(this).balance < goal) {
+                return State.Ongoing;
+            }
+            return State.OngoingGoalReached;
         }
-        if (claimed || address(this).balance >= goal) {
-            return State.Successful;
+        if (address(this).balance >= goal) {
+            return State.EndedGoalReached;
         }
-        // if (balance < goal):
-        return State.Failed;
+        return State.EndedGoalNotReached;
     }
 
     address public creator;
-    uint256 public goal;
-    uint256 public deadline;
+    uint256 public immutable goal;
+    uint256 public immutable deadline;
     bool public claimed;
 
-    mapping(address => uint256) public plegerToAmount;
+    mapping(address => uint256) public pledgerToAmount;
 
     event Pledged(address pledger, uint256 amount, uint256 totalAfter);
     event GoalReached(uint256 total, uint256 timestamp);
@@ -54,13 +57,17 @@ contract Crowdfunding {
     }
 
     // Pledge function: send ETH to the contract to pledge
-    function pledge() public payable {
-        require(getState() == State.Ongoing, "Campaign is not ongoing");
-        plegerToAmount[msg.sender] += msg.value;
+    function pledge() external payable {
+        State currentState = getState();
+        require(currentState == State.Ongoing || currentState == State.OngoingGoalReached, "Campaign is not ongoing");
+        pledgerToAmount[msg.sender] += msg.value;
+
+        emit Pledged(msg.sender, msg.value, address(this).balance);
         // TODO: check if i need to add a line that trasfers the ETH to the contract?
         // Answer: just by making the method payable, the ETH is automatically sent to the contract
-        emit Pledged(msg.sender, msg.value, address(this).balance);
-        if (getState() == State.Successful) {
+        uint256 afterBalance = address(this).balance;
+        uint256 beforeBalance = afterBalance - msg.value;
+        if (beforeBalance < goal && afterBalance >= goal) {
             emit GoalReached(address(this).balance, block.timestamp);
         }
     }
@@ -77,7 +84,7 @@ contract Crowdfunding {
     // Claim function: creator can claim the funds if the goal is reached after the deadline
     function claim() external {
         require(msg.sender == creator, "Only the creator can claim the funds");
-        require(getState() == State.Successful, "Campaign is not successful");
+        require(getState() == State.EndedGoalReached, "Campaign is not successful Ended");
         require(!claimed, "Funds have already been claimed");
         claimed = true;
         uint256 amount = address(this).balance;
@@ -88,10 +95,10 @@ contract Crowdfunding {
 
     // pledgers can withdraw their funds if the goal is not reached after the deadline
     function giveback() external {
-        require(getState() == State.Failed, "Campaign is not failed");
-        uint256 amount = plegerToAmount[msg.sender];
+        require(getState() == State.EndedGoalNotReached, "Campaign is not failed");
+        uint256 amount = pledgerToAmount[msg.sender];
         require(amount > 0, "No funds to withdraw");
-        plegerToAmount[msg.sender] = 0;
+        pledgerToAmount[msg.sender] = 0;
         (bool ok,) = payable(msg.sender).call{value: amount}("");
         require(ok, "ETH transfer failed");
         emit Refunded(msg.sender, amount);

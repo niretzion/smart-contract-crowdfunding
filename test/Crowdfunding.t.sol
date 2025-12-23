@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {Crowdfunding} from "../src/Crowdfunding.sol";
 
 contract CrowdfundingTest is Test {
@@ -43,7 +44,7 @@ contract CrowdfundingTest is Test {
      7. fast forward time to after deadline
      8. expect revert when owner1 try to claim funds when goal not reached
      9. expect revert , pledger1 pledge another 0.6 ether to reach the goal after deadline
-     10. pleger1 get refund
+     10. pledger1 get refund
      11. check state after refund, balance should be 0
 
     Test2:
@@ -90,7 +91,14 @@ contract CrowdfundingTest is Test {
      3. owner1 pledge some ether to his own contract. goal is reached
      4. fast forward time to after deadline of contract1
      5. owner1 claim funds - success
-     */
+
+
+    Test7: check that GoalReached event is emitted correctly
+     1. create new crowdfunding contract1 by owner1
+     2. pledger1 pledge some ether to contract1, but not reaching goal - no event expected
+     3. pledger2 pledge some ether to contract1, reaching the goal - expect GoalReached event
+     3. pledger3 pledge some ether to contract1, after goal reached - no event expected
+    */
 
     // Test1
     function test1_contract1() public {
@@ -102,7 +110,7 @@ contract CrowdfundingTest is Test {
 
         vm.prank(pledger1);
         crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
-        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0.5 ether);
+        assertEq(crowdfundingContract1Owener1.pledgerToAmount(pledger1), 0.5 ether);
         assertEq(address(crowdfundingContract1Owener1).balance, 0.5 ether);
 
         // 5. expect revert when pledger1 try to claim funds
@@ -123,10 +131,10 @@ contract CrowdfundingTest is Test {
         vm.prank(pledger1);
         vm.expectRevert();
         crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
-        //10. pleger1 get refund
+        //10. pledger1 get refund
         vm.prank(pledger1);
         crowdfundingContract1Owener1.giveback();
-        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0);
+        assertEq(crowdfundingContract1Owener1.pledgerToAmount(pledger1), 0);
         // 11. check state after refund, balance should be 0
         assertEq(address(crowdfundingContract1Owener1).balance, 0);
     }
@@ -231,13 +239,13 @@ contract CrowdfundingTest is Test {
         // 7. pledger1 get refund
         vm.prank(pledger1);
         crowdfundingContract1Owener1.giveback();
-        assertEq(crowdfundingContract1Owener1.plegerToAmount(pledger1), 0);
+        assertEq(crowdfundingContract1Owener1.pledgerToAmount(pledger1), 0);
         assertEq(address(crowdfundingContract1Owener1).balance, 0.3 ether);
         assertEq(address(pledger1).balance, 10 ether); // gas is not deducted in tests, we it still has 10 eth
         // 8. owner1 get refund.
         vm.prank(owner1);
         crowdfundingContract1Owener1.giveback();
-        assertEq(crowdfundingContract1Owener1.plegerToAmount(owner1), 0);
+        assertEq(crowdfundingContract1Owener1.pledgerToAmount(owner1), 0);
     }
 
     function test6_owner_pledges_to_reach_goal() public {
@@ -258,5 +266,40 @@ contract CrowdfundingTest is Test {
         crowdfundingContract1Owener1.claim();
         assertEq(address(crowdfundingContract1Owener1).balance, 0);
         assertEq(address(owner1).balance, owner1InitialBalance + 1.1 ether);
+    }
+
+    function test7_goal_reached_event() public {
+        // 2. pledger1 pledge some ether to contract1, but not reaching goal - no event expected
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.4 ether}();
+
+        Vm.Log[] memory logs1 = vm.getRecordedLogs();
+        assertFalse(_goalReachedEmitted(address(crowdfundingContract1Owener1), logs1));
+
+        // 3. pledger2 pledge some ether to contract1, reaching the goal - expect GoalReached event
+        vm.prank(pledger2);
+        vm.expectEmit(false, false, false, false);
+        emit Crowdfunding.GoalReached(1.1 ether, block.timestamp);
+        crowdfundingContract1Owener1.pledge{value: 0.7 ether}();
+
+        Vm.Log[] memory logs2 = vm.getRecordedLogs();
+        assertTrue(_goalReachedEmitted(address(crowdfundingContract1Owener1), logs2));
+
+        // 4. pledger3 pledge some ether to contract1, after goal reached - no event expected
+        vm.prank(pledger3);
+        crowdfundingContract1Owener1.pledge{value: 0.5 ether}();
+
+        Vm.Log[] memory logs3 = vm.getRecordedLogs();
+        assertFalse(_goalReachedEmitted(address(crowdfundingContract1Owener1), logs3));
+    }
+
+    function _goalReachedEmitted(address emitter, Vm.Log[] memory logs) internal pure returns (bool) {
+        bytes32 sig = keccak256("GoalReached(uint256,uint256)");
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].emitter == emitter && logs[i].topics.length > 0 && logs[i].topics[0] == sig) {
+                return true;
+            }
+        }
+        return false;
     }
 }
