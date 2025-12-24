@@ -50,6 +50,9 @@ contract Crowdfunding {
 
     constructor(address _creator, uint256 _goal, uint256 _deadline) {
         require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(_goal > 0, "Goal must be greater than 0");
+        require(_creator != address(0), "Creator cannot be the zero address");
+
         creator = _creator;
         goal = _goal;
         deadline = _deadline;
