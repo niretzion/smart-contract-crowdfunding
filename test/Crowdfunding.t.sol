@@ -293,6 +293,34 @@ contract CrowdfundingTest is Test {
         assertFalse(_goalReachedEmitted(address(crowdfundingContract1Owener1), logs3));
     }
 
+    function test8_update_creator_address() public {
+        // Owner1 updates the creator address to pledger1
+        vm.prank(owner1);
+        crowdfundingContract1Owener1.updateCreator(pledger1);
+        assertEq(crowdfundingContract1Owener1.creator(), pledger1);
+
+        // Owner2 tries to update the creator address - expect revert
+        vm.prank(owner2);
+        vm.expectRevert();
+        crowdfundingContract1Owener1.updateCreator(pledger2);
+        assertEq(crowdfundingContract1Owener1.creator(), pledger1);
+
+        // Now pledger1 should be able to claim funds after goal is reached and deadline passed
+        // Pledger1 pledges to reach the goal
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 1.2 ether}();
+
+        // Fast forward time to after deadline
+        vm.warp(block.timestamp + 1 days);
+
+        // Pledger1 claims the funds
+        uint256 pledger1InitialBalance = address(pledger1).balance;
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.claim();
+        assertEq(address(crowdfundingContract1Owener1).balance, 0);
+        assertEq(address(pledger1).balance, pledger1InitialBalance + 1.2 ether);
+    }
+
     function _goalReachedEmitted(address emitter, Vm.Log[] memory logs) internal pure returns (bool) {
         bytes32 sig = keccak256("GoalReached(uint256,uint256)");
         for (uint256 i = 0; i < logs.length; i++) {

@@ -103,4 +103,9 @@ contract Crowdfunding {
         require(ok, "ETH transfer failed");
         emit Refunded(msg.sender, amount);
     }
+
+    function updateCreator(address newCreator) external {
+        require(msg.sender == creator, "Only the creator can update the creator address");
+        creator = newCreator;
+    }
 }
