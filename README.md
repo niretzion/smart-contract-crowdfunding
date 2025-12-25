@@ -1,70 +1,117 @@
-<<<<<<< HEAD
-## Foundry
+Crowdfunding Smart Contract (Foundry)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A simple Ethereum crowdfunding smart contract built with Foundry, using OpenZeppelin for security primitives and forge-std for testing.
 
-Foundry consists of:
+This repository uses git submodules to manage Solidity dependencies.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Requirements
 
-## Documentation
+Make sure you have the following installed:
 
-https://book.getfoundry.sh/
+Git
 
-## Usage
+Foundry (forge, cast, anvil)
 
-### Build
+Install Foundry if needed:
 
-```shell
-$ forge build
-```
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
 
-### Test
+Getting Started
+1️⃣ Clone the repository (IMPORTANT)
 
-```shell
-$ forge test
-```
+This project uses git submodules, so you must clone with:
 
-### Format
+git clone --recurse-submodules <REPO_URL>
 
-```shell
-$ forge fmt
-```
 
-### Gas Snapshots
+If you already cloned without submodules, run:
 
-```shell
-$ forge snapshot
-```
+git submodule update --init --recursive
 
-### Anvil
+2️⃣ Build the project
+forge build
 
-```shell
-$ anvil
-```
+3️⃣ Run tests
+forge test
 
-### Deploy
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+For verbose output:
 
-### Cast
+forge test -vv
 
-```shell
-$ cast <subcommand>
-```
+Project Structure
+.
+├── src/            # Smart contracts
+├── test/           # Foundry tests
+├── script/         # Deployment / scripts
+├── lib/            # Dependencies (git submodules)
+│   ├── forge-std/
+│   └── openzeppelin-contracts/
+├── foundry.toml
+├── foundry.lock
+└── README.md
 
-### Help
+Dependencies
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
-=======
-# smart-contract-crowdfunding
->>>>>>> 6d97ba3988f7036664e1e9b7b68c713d9805098c
+Dependencies are managed via git submodules:
+
+forge-std – Foundry standard library for testing
+
+openzeppelin-contracts – battle-tested security contracts
+
+They are not vendored — the repository tracks exact commit hashes for deterministic builds.
+
+To update dependencies intentionally:
+
+forge install <dependency>
+
+
+Then commit the updated submodule pointer.
+
+Import Examples
+
+Example OpenZeppelin import (Foundry style):
+
+import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+
+Development Notes
+
+Solidity version: ^0.8.x
+
+ETH transfers use call
+
+Reentrancy protection via ReentrancyGuard
+
+Follows Checks → Effects → Interactions (CEI) pattern
+
+Common Issues
+❌ Compilation error: submodule not found
+
+Make sure submodules are initialized:
+
+git submodule update --init --recursive
+
+Team Workflow (Recommended)
+
+Pull latest changes:
+
+git pull
+git submodule update --init --recursive
+
+
+Build & test locally:
+
+forge build
+forge test
+
+
+When updating dependencies:
+
+Update submodule
+
+Commit .gitmodules, foundry.lock, and submodule pointer
+
+License
+
+MIT
