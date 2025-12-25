@@ -28,9 +28,12 @@ contract CrowdfundingTest is Test {
         pledger3 = makeAddr("pledger3");
         vm.deal(address(pledger3), 10 ether);
 
-        crowdfundingContract1Owener1 = new Crowdfunding(owner1, 1 ether, block.timestamp + 1 days);
-        crowdfundingContract2Owener1 = new Crowdfunding(owner1, 1 ether, block.timestamp + 2 days);
-        crowdfundingContract3Owener2 = new Crowdfunding(owner2, 1 ether, block.timestamp + 1 days);
+        vm.prank(owner1);
+        crowdfundingContract1Owener1 = new Crowdfunding(1 ether, block.timestamp + 1 days);
+        vm.prank(owner1);
+        crowdfundingContract2Owener1 = new Crowdfunding(1 ether, block.timestamp + 2 days);
+        vm.prank(owner2);
+        crowdfundingContract3Owener2 = new Crowdfunding(1 ether, block.timestamp + 1 days);
     }
 
     /*
@@ -319,6 +322,18 @@ contract CrowdfundingTest is Test {
         crowdfundingContract1Owener1.claim();
         assertEq(address(crowdfundingContract1Owener1).balance, 0);
         assertEq(address(pledger1).balance, pledger1InitialBalance + 1.2 ether);
+    }
+
+    function test9_pledge_minimum_amount() public {
+        // Pledger1 tries to pledge less than the minimum amount - expect revert
+        vm.prank(pledger1);
+        vm.expectRevert(bytes("Pledge amount must be greater than 0.001 ETH"));
+        crowdfundingContract1Owener1.pledge{value: 0.0005 ether}();
+
+        // Pledger1 pledges the minimum amount successfully
+        vm.prank(pledger1);
+        crowdfundingContract1Owener1.pledge{value: 0.002 ether}();
+        assertEq(crowdfundingContract1Owener1.pledgerToAmount(pledger1), 0.002 ether);
     }
 
     function _goalReachedEmitted(address emitter, Vm.Log[] memory logs) internal pure returns (bool) {

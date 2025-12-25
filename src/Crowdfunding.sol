@@ -48,12 +48,11 @@ contract Crowdfunding {
     event Refunded(address pledger, uint256 amount);
     event Claimed(address creator, uint256 amount);
 
-    constructor(address _creator, uint256 _goal, uint256 _deadline) {
+    // making the deployer the creator for simplicity
+    constructor(uint256 _goal, uint256 _deadline) {
         require(_deadline > block.timestamp, "Deadline must be in the future");
         require(_goal > 0, "Goal must be greater than 0");
-        require(_creator != address(0), "Creator cannot be the zero address");
-
-        creator = _creator;
+        creator = msg.sender;
         goal = _goal;
         deadline = _deadline;
         claimed = false;
@@ -61,6 +60,8 @@ contract Crowdfunding {
 
     // Pledge function: send ETH to the contract to pledge
     function pledge() external payable {
+        require(msg.value > 0.001 ether, "Pledge amount must be greater than 0.001 ETH");
+
         State currentState = getState();
         require(currentState == State.Ongoing || currentState == State.OngoingGoalReached, "Campaign is not ongoing");
         pledgerToAmount[msg.sender] += msg.value;
