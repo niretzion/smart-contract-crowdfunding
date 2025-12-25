@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "forge-std/Script.sol";
-import "../src/Crowdfunding.sol";
+import {Script, console2} from "forge-std/Script.sol";
+import {Crowdfunding} from "../src/Crowdfunding.sol";
 
 contract DeployCrowdfunding is Script {
     function run() external {
@@ -17,6 +17,8 @@ contract DeployCrowdfunding is Script {
             1000000, // _goal
             1767797424 // _deadline
         );
+
+        console2.log("Crowdfunding deployed at:", address(crowdfunding));
 
         vm.stopBroadcast();
     }

@@ -1,5 +1,7 @@
 pragma solidity ^0.8.13;
 
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+
 /*
 A simple crowdfunding contract
 The campain start when the contract is deployed, and ends at a specified deadline.
@@ -24,21 +26,21 @@ contract Crowdfunding {
     }
 
     function getState() public view returns (State) {
-        if (block.timestamp < deadline) {
-            if (address(this).balance < goal) {
+        if (block.timestamp < DEADLINE) {
+            if (address(this).balance < GOAL) {
                 return State.Ongoing;
             }
             return State.OngoingGoalReached;
         }
-        if (address(this).balance >= goal) {
+        if (address(this).balance >= GOAL) {
             return State.EndedGoalReached;
         }
         return State.EndedGoalNotReached;
     }
 
     address public creator;
-    uint256 public immutable goal;
-    uint256 public immutable deadline;
+    uint256 public immutable GOAL;
+    uint256 public immutable DEADLINE;
     bool public claimed;
 
     mapping(address => uint256) public pledgerToAmount;
@@ -53,8 +55,8 @@ contract Crowdfunding {
         require(_deadline > block.timestamp, "Deadline must be in the future");
         require(_goal > 0, "Goal must be greater than 0");
         creator = msg.sender;
-        goal = _goal;
-        deadline = _deadline;
+        GOAL = _goal;
+        DEADLINE = _deadline;
         claimed = false;
     }
 
@@ -71,7 +73,7 @@ contract Crowdfunding {
         // Answer: just by making the method payable, the ETH is automatically sent to the contract
         uint256 afterBalance = address(this).balance;
         uint256 beforeBalance = afterBalance - msg.value;
-        if (beforeBalance < goal && afterBalance >= goal) {
+        if (beforeBalance < GOAL && afterBalance >= GOAL) {
             emit GoalReached(address(this).balance, block.timestamp);
         }
     }

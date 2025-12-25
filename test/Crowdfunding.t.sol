@@ -106,9 +106,9 @@ contract CrowdfundingTest is Test {
     // Test1
     function test1_contract1() public {
         assertEq(crowdfundingContract1Owener1.creator(), owner1);
-        assertEq(crowdfundingContract1Owener1.goal(), 1 ether);
+        assertEq(crowdfundingContract1Owener1.GOAL(), 1 ether);
         assertEq(crowdfundingContract1Owener1.claimed(), false);
-        assertEq(crowdfundingContract1Owener1.deadline(), block.timestamp + 1 days);
+        assertEq(crowdfundingContract1Owener1.DEADLINE(), block.timestamp + 1 days);
         assertEq(uint8(crowdfundingContract1Owener1.getState()), uint8(Crowdfunding.State.Ongoing));
 
         vm.prank(pledger1);
