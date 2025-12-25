@@ -13,7 +13,7 @@ contract DeployCrowdfunding is Script {
 
         // constructor(address _creator, uint256 _goal, uint256 _deadline)
         Crowdfunding crowdfunding = new Crowdfunding(
-            0xb2944182D46439B43116A0fD57C79c961526d364, // _creator
+            // 0xb2944182D46439B43116A0fD57C79c961526d364, // _creator
             1000000, // _goal
             1767797424 // _deadline
         );
