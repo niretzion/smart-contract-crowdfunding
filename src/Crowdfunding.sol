@@ -16,7 +16,7 @@ pledge can be done only by calling the `pledge` function and sending ETH. transf
 `send` or `transfer` will be rejected.
 */
 
-contract Crowdfunding {
+contract Crowdfunding is ReentrancyGuard {
     // Contract State
     enum State {
         Ongoing,
@@ -88,7 +88,7 @@ contract Crowdfunding {
     }
 
     // Claim function: creator can claim the funds if the goal is reached after the deadline
-    function claim() external {
+    function claim() external nonReentrant {
         require(msg.sender == creator, "Only the creator can claim the funds");
         require(getState() == State.EndedGoalReached, "Campaign is not successful Ended");
         require(!claimed, "Funds have already been claimed");
@@ -100,7 +100,7 @@ contract Crowdfunding {
     }
 
     // pledgers can withdraw their funds if the goal is not reached after the deadline
-    function giveback() external {
+    function giveback() external nonReentrant {
         require(getState() == State.EndedGoalNotReached, "Campaign is not failed");
         uint256 amount = pledgerToAmount[msg.sender];
         require(amount > 0, "No funds to withdraw");
